@@ -1,76 +1,80 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { expect } from "chai";
+import { createVueField, trigger, checkAttribute } from "../util";
 
+import Vue from "vue";
 import FieldGoogleAddress from "src/fields/optional/fieldGoogleAddress.vue";
 
-const localVue = createLocalVue();
-let wrapper;
+Vue.component("FieldGoogleAddress", FieldGoogleAddress);
 
-function createField2(data, methods) {
-	const _wrapper = mount(FieldGoogleAddress, {
-		localVue,
-		propsData: data,
-		methods: methods
-	});
+let el, vm, field;
 
-	wrapper = _wrapper;
-
-	return _wrapper;
+function createField(test, schema = {}, model = null, disabled = false, options) {
+	[ el, vm, field ] = createVueField(test, "fieldGoogleAddress", schema, model, disabled, options);
 }
 
-describe("fieldGoogleAddress.vue", () => {
+describe("fieldGoogleAddress.vue", function() {
+
 	describe("check template", () => {
 		let schema = {
 			type: "text",
 			label: "Address",
 			model: "address",
 			autocomplete: "off",
-			disabled: false,
-			placeholder: "",
-			readonly: false,
-			inputName: ""
+			placeholder: "Field placeholder",
+			readonly: false
 		};
 		let model = { address: "Paris, France" };
 		let input;
 
-		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("input");
+		before( () => {
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("input")[0];
 		});
 
 		it("should contain an input text element", () => {
-			expect(wrapper.exists()).to.be.true;
-			expect(input.exists()).to.be.true;
-			expect(input.attributes().type).to.be.equal("text");
-			expect(input.classes()).to.include("form-control");
+			expect(field).to.be.exist;
+			expect(field.$el).to.be.exist;
+
+			expect(input).to.be.defined;
+			expect(input.type).to.be.equal("text");
+			expect(input.classList.contains("form-control")).to.be.true;
 		});
 
-		it("should contain the value", () => {
-			expect(input.element.value).to.be.equal("Paris, France");
+		it("should contain the value", (done) => {
+			vm.$nextTick( () => {
+				expect(input.value).to.be.equal("Paris, France");
+				done();
+			});
 		});
 
 		describe("check optional attribute", () => {
 			let attributes = ["autocomplete", "disabled", "placeholder", "readonly", "inputName"];
 
-			attributes.forEach(name => {
-				it("should set " + name, () => {
-					checkAttribute(name, wrapper, schema);
+			attributes.forEach(function(name) {
+				it("should set " + name, function(done) {
+					checkAttribute(name, vm, input, field, schema, done);
 				});
 			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.address = "Rome, Italy";
-			wrapper.update();
+			vm.$nextTick( () => {
+				expect(input.value).to.be.equal("Rome, Italy");
+				done();
+			});
 
-			expect(input.element.value).to.be.equal("Rome, Italy");
 		});
 
-		it("model value should be the input value if changed", () => {
-			input.element.value = "Budapest, Hungary";
-			input.trigger("input");
-			wrapper.update();
+		it("model value should be the input value if changed", (done) => {
+			input.value = "Budapest, Hungary";
+			trigger(input, "input");
 
-			expect(model.address).to.be.equal("Budapest, Hungary");
+			vm.$nextTick( () => {
+				expect(model.address).to.be.equal("Budapest, Hungary");
+				done();
+			});
+
 		});
 
 		/*
@@ -79,5 +83,7 @@ describe("fieldGoogleAddress.vue", () => {
 				2. check geolocate called if input got focus
 				3. check onPlaceChanged called
 		 */
+
 	});
+
 });

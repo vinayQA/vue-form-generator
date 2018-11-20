@@ -1,86 +1,86 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { expect } from "chai";
+import { createVueField, trigger, checkAttribute } from "../util";
 import fecha from "fecha";
 
-let jQuery = require("jquery");
-let $ = jQuery(window);
-global.$ = $; // make availble to other files if necessary
-global.datetimepicker = window.datetimepicker;
-require("eonasdan-bootstrap-datetimepicker");
-
+import Vue from "vue";
 import FieldDateTimePicker from "src/fields/optional/fieldDateTimePicker.vue";
 
-const localVue = createLocalVue();
-let wrapper;
+Vue.component("FieldDateTimePicker", FieldDateTimePicker);
 
-function createField2(data, methods) {
-	const _wrapper = mount(FieldDateTimePicker, {
-		localVue,
-		propsData: data,
-		methods: methods
-	});
+let el, vm, field;
 
-	wrapper = _wrapper;
-
-	return _wrapper;
+function createField(test, schema = {}, model = null, disabled = false, options) {
+	[ el, vm, field ] = createVueField(test, "fieldDateTimePicker", schema, model, disabled, options);
 }
 
-describe("fieldDateTimePicker.vue", () => {
-	describe("check template", () => {
+describe("fieldDateTimePicker.vue", function() {
+
+	describe.skip("check template", () => {
 		let schema = {
 			type: "dateTimePicker",
 			label: "Event",
 			model: "event",
 			autocomplete: "off",
-			disabled: false,
 			placeholder: "",
-			readonly: false,
-			inputName: ""
+			readonly: false
 		};
 		let model = { event: 1462799081231 };
 		let input;
 
-		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("input");
+		before( () => {
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("input")[0];
 		});
 
 		it("should contain an input text element", () => {
-			expect(wrapper.exists()).to.be.true;
-			expect(input.exists()).to.be.true;
-			expect(input.attributes().type).to.be.equal("text");
-			expect(input.classes()).to.include("form-control");
+			expect(field).to.be.exist;
+			expect(field.$el).to.be.exist;
+
+			expect(input).to.be.defined;
+			expect(input.type).to.be.equal("text");
+			expect(input.classList.contains("form-control")).to.be.true;
 		});
 
-		it("should contain the value", () => {
-			expect(input.element.value).to.be.equal(fecha.format(new Date(1462799081231), "YYYY-MM-DD HH:mm:ss"));
+		it("should contain the value", (done) => {
+			vm.$nextTick( () => {
+				expect(input.value).to.be.equal( fecha.format(new Date(1462799081231), "YYYY-MM-DD HH:mm:ss") );
+				done();
+			});
 		});
 
 		describe("check optional attribute", () => {
 			let attributes = ["autocomplete", "disabled", "placeholder", "readonly", "inputName"];
 
 			attributes.forEach(function(name) {
-				it("should set " + name, () => {
-					checkAttribute(name, wrapper, schema);
+				it("should set " + name, function(done) {
+					checkAttribute(name, vm, input, field, schema, done);
 				});
 			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.event = 1234567890123;
-			wrapper.update();
+			vm.$nextTick( () => {
+				expect(input.value).to.be.equal( fecha.format(new Date(1234567890123), "YYYY-MM-DD HH:mm:ss") );
+				done();
+			});
 
-			expect(input.element.value).to.be.equal(fecha.format(new Date(1234567890123), "YYYY-MM-DD HH:mm:ss"));
 		});
 
-		it("model value should be the input value if changed", () => {
-			input.element.value = fecha.format(new Date(1420194153000), "YYYY-MM-DD HH:mm:ss");
-			input.trigger("input");
+		it("model value should be the input value if changed", (done) => {
+			input.value = fecha.format(new Date(1420194153000), "YYYY-MM-DD HH:mm:ss");
+			trigger(input, "input");
 
-			expect(model.event).to.be.equal(1420194153000);
+			vm.$nextTick( () => {
+				expect(model.event).to.be.equal(1420194153000);
+				done();
+			});
+
 		});
+
 	});
 
-	describe("check YYYYMMDD format", () => {
+	describe.skip("check YYYYMMDD format", () => {
 		let schema = {
 			type: "dateTimePicker",
 			label: "Event",
@@ -93,26 +93,28 @@ describe("fieldDateTimePicker.vue", () => {
 		let model = { event: "20160509" };
 		let input;
 
-		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("input");
+		before( () => {
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("input")[0];
 		});
 
-		it.skip("should contain the value", () => {
-			console.log(input.element.value);
-			console.log(schema.format);
-			console.log(new Date(20160509));
-			console.log(fecha.format(new Date(20160509), schema.format));
-			console.log(schema.dateTimePickerOptions.format);
-
-			expect(input.element.value).to.be.equal(fecha.format(new Date(20160509), schema.format));
+		it("should contain the value", (done) => {
+			vm.$nextTick( () => {
+				expect(input.value).to.be.equal( fecha.format(new Date("20160509"), schema.format).format(schema.dateTimePickerOptions.format) );
+				done();
+			});
 		});
 
-		it("model value should be the formatted input value if changed", () => {
-			input.element.value = "2015.01.02";
-			input.trigger("input");
+		it("model value should be the formatted input value if changed", (done) => {
+			input.value = "2015.01.02";
+			trigger(input, "input");
 
-			expect(model.event).to.be.equal("20150102");
+			vm.$nextTick( () => {
+				expect(model.event).to.be.equal( "20150102" );
+				done();
+			});
+
 		});
 	});
+
 });

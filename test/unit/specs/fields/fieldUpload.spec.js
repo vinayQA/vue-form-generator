@@ -1,29 +1,25 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { expect } from "chai";
+import { createVueField, checkAttribute } from "../util";
 
+import Vue from "vue";
 import fieldUpload from "src/fields/core/fieldUpload.vue";
 
-const localVue = createLocalVue();
-let wrapper;
+Vue.component("fieldUpload", fieldUpload);
 
-function createField2(data, methods) {
-	const _wrapper = mount(fieldUpload, {
-		localVue,
-		propsData: data,
-		methods: methods
-	});
+let el, vm, field;
 
-	wrapper = _wrapper;
-
-	return _wrapper;
+function createField(test, schema = {}, model = null, disabled = false, options) {
+	[el, vm, field] = createVueField(test, "fieldUpload", schema, model, disabled, options);
 }
 
-describe("fieldUpload.vue", () => {
+describe("fieldUpload.vue", function () {
+
 	describe("check template", () => {
 		let schema = {
 			type: "upload",
 			label: "Upload",
 			inputName: "testupload",
-			placeholder: "",
+			placeholder: "Field placeholder",
 			readonly: false,
 			required: false,
 			disabled: false,
@@ -35,41 +31,44 @@ describe("fieldUpload.vue", () => {
 		let input;
 
 		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("input");
-			schema.inputType = "file";
-			wrapper.update();
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("input")[0];
+			field.schema.inputType = "file";
 		});
 
 		it("should contain an input text element", () => {
-			expect(wrapper.exists()).to.be.true;
-			expect(input.is("input")).to.be.true;
-			expect(input.attributes().type).to.be.equal("file");
-			expect(input.classes()).to.include("form-control");
+			expect(field).to.be.exist;
+			expect(field.$el).to.be.exist;
+
+			expect(input).to.be.defined;
+			expect(input.type).to.be.equal("file");
+			expect(input.classList.contains("form-control")).to.be.true;
 		});
 
 		describe("check optional attribute", () => {
-			attributes.forEach(name => {
-				it("should set " + name, () => {
-					checkAttribute(name, wrapper, schema);
+			attributes.forEach(function (name) {
+				it("should set " + name, function (done) {
+					checkAttribute(name, vm, input, field, schema, done);
 				});
 			});
 
 			it("should set name", () => {
-				expect(input.attributes().name).to.be.equal("testupload");
+				expect(input.name).to.be.equal("testupload");
 			});
 
 			it("should set required", () => {
-				expect(input.attributes().required).to.be.undefined;
+				expect(input.required).to.be.false;
 			});
 
 			it("should set multiple", () => {
-				expect(input.attributes().multiple).to.be.equal("multiple");
+				expect(input.multiple).to.be.exist;
 			});
 
 			it("should set accept", () => {
-				expect(input.attributes().accept).to.be.equal("image/*");
+				expect(input.accept).to.be.equal("image/*");
 			});
+
 		});
+
 	});
 });

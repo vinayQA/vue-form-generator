@@ -1,129 +1,143 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { expect } from "chai";
+import { createVueField, trigger, checkAttribute } from "../util";
 
+import Vue from "vue";
 import FieldSelect from "src/fields/core/fieldSelect.vue";
 
-const localVue = createLocalVue();
-let wrapper;
+Vue.component("FieldSelect", FieldSelect);
 
-function createField2(data, methods) {
-	const _wrapper = mount(FieldSelect, {
-		localVue,
-		propsData: data,
-		methods: methods
-	});
+let el, vm, field;
 
-	wrapper = _wrapper;
-
-	return _wrapper;
+function createField(test, schema = {}, model = null, disabled = false, options) {
+	[el, vm, field] = createVueField(test, "fieldSelect", schema, model, disabled, options);
 }
 
-describe("fieldSelect.vue", () => {
+
+describe("fieldSelect.vue", function () {
+
 	describe("check template", () => {
 		let schema = {
 			type: "select",
 			label: "Cities",
 			model: "city",
 			required: false,
-			disabled: false,
-			inputName: "",
-			values: ["London", "Paris", "Rome", "Berlin"],
+			values: [
+				"London",
+				"Paris",
+				"Rome",
+				"Berlin"
+			],
 			fieldClasses: ["applied-class", "another-class"]
 		};
 		let model = { city: "Paris" };
 		let input;
 
 		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("select");
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("select")[0];
 		});
 
 		it("should contain a select element", () => {
-			expect(wrapper.exists()).to.be.true;
-			expect(input.is("select")).to.be.true;
-			expect(input.classes()).to.include("form-control");
+			expect(field).to.be.exist;
+			expect(field.$el).to.be.exist;
+
+			expect(input).to.be.defined;
+			expect(input.classList.contains("form-control")).to.be.true;
 		});
 
 		it("should contain option elements", () => {
-			let options = input.findAll("option");
-
+			let options = input.querySelectorAll("option");
 			expect(options.length).to.be.equal(4 + 1); // +1 for <non selected>
-			expect(options.at(2).element.value).to.be.equal("Paris");
-			expect(options.at(2).text()).to.be.equal("Paris");
-			expect(options.at(2).element.selected).to.be.true;
+
+			expect(options[2].value).to.be.equal("Paris");
+			expect(options[2].textContent).to.be.equal("Paris");
+			expect(options[2].selected).to.be.true;
 		});
 
 		it("should contain a <non selected> element", () => {
-			let options = input.findAll("option");
-
-			expect(options.at(0).attributes().disabled).to.be.undefined;
-			expect(options.at(0).text()).to.be.equal("<Nothing selected>");
+			let options = input.querySelectorAll("option");
+			expect(options[0].disabled).to.be.false;
+			expect(options[0].textContent).to.be.equal("<Nothing selected>");
 		});
 
-		it("should contain the value", () => {
-			expect(input.element.value).to.be.equal("Paris");
+		it("should contain the value", (done) => {
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("Paris");
+				done();
+			});
 		});
 
 		describe("check optional attribute", () => {
 			let attributes = ["disabled", "inputName"];
 
-			attributes.forEach(name => {
-				it("should set " + name, () => {
-					checkAttribute(name, wrapper, schema, "select");
+			attributes.forEach(function (name) {
+				it("should set " + name, function (done) {
+					checkAttribute(name, vm, input, field, schema, done);
 				});
 			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.city = "Rome";
-			wrapper.update();
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("Rome");
+				done();
+			});
 
-			expect(input.element.value).to.be.equal("Rome");
 		});
 
-		it("model value should be the input value if changed", () => {
-			input.element.value = "London";
-			input.trigger("change");
+		it("model value should be the input value if changed", (done) => {
+			input.value = "London";
+			trigger(input, "change");
 
-			expect(model.city).to.be.equal("London");
+			vm.$nextTick(() => {
+				expect(model.city).to.be.equal("London");
+				done();
+			});
+
 		});
 
-		it("should contain a disabled <non selected> element if required", () => {
+		it("should contain a disabled <non selected> element if required", (done) => {
 			schema.required = true;
-			wrapper.update();
-			let options = input.findAll("option");
-
-			expect(options.at(0).attributes().disabled).to.be.equal("disabled");
-			expect(options.at(0).text()).to.be.equal("<Nothing selected>");
+			vm.$nextTick(() => {
+				let options = input.querySelectorAll("option");
+				expect(options[0].disabled).to.be.true;
+				expect(options[0].textContent).to.be.equal("<Nothing selected>");
+				done();
+			});
 		});
 
-		it("should show the customized <non selected> text", () => {
-			schema.selectOptions = {
+		it("should show the customized <non selected> text", (done) => {
+			Vue.set(vm.schema, "selectOptions", {
 				noneSelectedText: "Empty list"
-			};
-			wrapper.update();
-			let options = input.findAll("option");
+			});
+			vm.$nextTick(() => {
+				let options = input.querySelectorAll("option");
+				expect(options[0].disabled).to.be.true;
+				expect(options[0].textContent).to.be.equal("Empty list");
 
-			expect(options.at(0).attributes().disabled).to.be.equal("disabled");
-			expect(options.at(0).text()).to.be.equal("Empty list");
+				schema.selectOptions = null;
 
-			schema.selectOptions = null;
-			wrapper.update();
+				done();
+			});
 		});
 
-		it("should hide the customized <non selected> text", () => {
-			schema.selectOptions = {
+		it("should hide the customized <non selected> text", (done) => {
+			Vue.set(vm.schema, "selectOptions", {
 				noneSelectedText: "Empty list",
 				hideNoneSelectedText: true
-			};
-			wrapper.update();
-			let options = input.findAll("option");
+			});
+			vm.$nextTick(() => {
+				let options = input.querySelectorAll("option");
+				expect(options[0].disabled).to.be.false;
+				expect(options[0].textContent).to.not.be.equal("Empty list");
 
-			expect(options.at(0).attributes().disabled).to.be.equal("disabled");
-			expect(options.at(0).text()).to.not.be.equal("Empty list");
+				schema.selectOptions = null;
 
-			schema.selectOptions = null;
-			wrapper.update();
+				done();
+			});
 		});
+
 	});
 
 	describe("check static values with { id, name } objects", () => {
@@ -137,63 +151,72 @@ describe("fieldSelect.vue", () => {
 				{ id: 3, name: "Rome" },
 				{ id: 4, name: "Berlin" },
 				{ id: 5, name: "Budapest", group: "HUN" },
-				{ id: 6, name: "Paks", group: "HUN" }
+				{ id: 6, name: "Paks", group: "HUN" },
 			]
 		};
 		let model = { city: 2 };
 		let input;
 
 		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("select");
-			wrapper.update();
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("select")[0];
 		});
 
 		it("should contain option elements", () => {
-			let options = input.findAll("option");
-
+			let options = input.querySelectorAll("option");
 			expect(options.length).to.be.equal(6 + 1); // +1 for <non selected>
-			expect(options.at(2).element.value).to.be.equal("2");
-			expect(options.at(2).text()).to.be.equal("Paris");
-			expect(options.at(2).element.selected).to.be.true;
-			expect(options.at(1).element.selected).to.be.false;
+
+			expect(options[2].value).to.be.equal("2");
+			expect(options[2].textContent).to.be.equal("Paris");
+			expect(options[2].selected).to.be.true;
+			expect(options[1].selected).to.be.false;
 		});
 
 		it("should contain optgroup elements", () => {
-			let optgroups = input.findAll("optgroup");
-
+			let optgroups = input.querySelectorAll("optgroup");
 			expect(optgroups.length).to.be.equal(1);
-			expect(optgroups.at(0).element.label).to.be.equal("HUN");
+			expect(optgroups[0].label).to.be.equal("HUN");
 		});
 
 		it("should contain option elements in optgroup", () => {
-			let og = input.find("optgroup");
-			let options = og.findAll("option");
+			let og = input.getElementsByTagName("optgroup")[0];
+			let options = og.querySelectorAll("option");
 
 			expect(options.length).to.be.equal(2);
-			expect(options.at(0).element.selected).to.be.false;
-			expect(options.at(1).element.selected).to.be.false;
-			expect(options.at(1).text()).to.be.equal("Paks");
-			expect(options.at(1).element.value).to.be.equal("6");
+			expect(options[0].selected).to.be.false;
+			expect(options[1].selected).to.be.false;
+
+			expect(options[1].textContent).to.be.equal("Paks");
+			expect(options[1].value).to.be.equal("6");
 		});
 
-		it("should contain the value", () => {
-			expect(input.element.value).to.be.equal("2");
+		it("should contain the value", (done) => {
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("2");
+				done();
+			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.city = 3;
-			wrapper.update();
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("3");
+				done();
+			});
 
-			expect(input.element.value).to.be.equal("3");
 		});
 
-		it("model value should be the input value if changed", () => {
-			input.element.value = "4";
-			input.trigger("change");
+		it("model value should be the input value if changed", (done) => {
+			input.value = "4";
+			trigger(input, "change");
 
-			expect(model.city).to.be.equal(4);
+			vm.$nextTick(() => {
+				expect(model.city).to.be.equal(4);
+				done();
+			});
+
 		});
+
 	});
 
 	describe("check function values", () => {
@@ -215,102 +238,42 @@ describe("fieldSelect.vue", () => {
 		let input;
 
 		before(() => {
-			createField2({ schema, model, disabled: false });
-			input = wrapper.find("select");
+			createField(this, schema, model, false);
+			input = el.getElementsByTagName("select")[0];
 		});
 
-		it("should contain the value", () => {
-			expect(input.element.value).to.be.equal("2");
+		it("should contain the value", (done) => {
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("2");
+				done();
+			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.city = 3;
-			wrapper.update();
+			vm.$nextTick(() => {
+				expect(input.value).to.be.equal("3");
+				done();
+			});
 
-			expect(input.element.value).to.be.equal("3");
 		});
 
-		it("model value should be the input value if changed", () => {
-			input.element.value = "4";
-			input.trigger("change");
+		it("model value should be the input value if changed", (done) => {
+			input.value = "4";
+			trigger(input, "change");
 
-			expect(model.city).to.be.equal(4);
+			vm.$nextTick(() => {
+				expect(model.city).to.be.equal(4);
+				done();
+			});
+
 		});
 
 		it("should have 2 classes", () => {
-			expect(input.classes()).to.include("applied-class");
-			expect(input.classes()).to.include("another-class");
+			expect(input.className.indexOf("applied-class")).not.to.be.equal(-1);
+			expect(input.className.indexOf("another-class")).not.to.be.equal(-1);
 		});
+
 	});
 
-	describe("check dynamic html attributes", () => {
-		describe("check input/wrapper attributes", () => {
-			let schema = {
-				type: "select",
-				label: "First Name",
-				model: "user__model",
-				inputName: "input_name",
-				fieldClasses: ["applied-class", "another-class"],
-				values() {
-					return [
-						{ id: 1, name: "London" },
-						{ id: 2, name: "Paris" },
-						{ id: 3, name: "Rome" },
-						{ id: 4, name: "Berlin" }
-					];
-				},
-				attributes: {
-					wrapper: {
-						"data-toggle": "collapse"
-					},
-					input: {
-						"data-toggle": "tooltip"
-					}
-				}
-			};
-			let model = {};
-			let input;
-
-			before(() => {
-				createField2({ schema, model });
-				input = wrapper.find("select");
-			});
-
-			it("input should have data-toggle attribute", () => {
-				expect(input.attributes()["data-toggle"]).to.be.equal("tooltip");
-			});
-		});
-
-		describe("check non-specific attributes", () => {
-			let schema = {
-				type: "select",
-				label: "First Name",
-				model: "user__model",
-				inputName: "input_name",
-				fieldClasses: ["applied-class", "another-class"],
-				values() {
-					return [
-						{ id: 1, name: "London" },
-						{ id: 2, name: "Paris" },
-						{ id: 3, name: "Rome" },
-						{ id: 4, name: "Berlin" }
-					];
-				},
-				attributes: {
-					"data-toggle": "tooltip"
-				}
-			};
-			let model = {};
-			let input;
-
-			before(() => {
-				createField2({ schema, model });
-				input = wrapper.find("select");
-			});
-
-			it("input should have data-toggle attribute", () => {
-				expect(input.attributes()["data-toggle"]).to.be.equal("tooltip");
-			});
-		});
-	});
 });
