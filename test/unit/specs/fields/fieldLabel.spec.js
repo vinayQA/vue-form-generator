@@ -1,23 +1,19 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { expect } from "chai";
+import { createVueField } from "../util";
 
+import Vue from "vue";
 import FieldLabel from "src/fields/core/fieldLabel.vue";
 
-const localVue = createLocalVue();
-let wrapper;
+Vue.component("FieldLabel", FieldLabel);
 
-function createField2(data, methods) {
-	const _wrapper = mount(FieldLabel, {
-		localVue,
-		propsData: data,
-		methods: methods
-	});
+let el, vm, field;
 
-	wrapper = _wrapper;
-
-	return _wrapper;
+function createField(test, schema = {}, model = null, disabled = false, options) {
+	[ el, vm, field ] = createVueField(test, "fieldLabel", schema, model, disabled, options);
 }
 
-describe("fieldLabel.vue", () => {
+describe("fieldLabel.vue", function() {
+
 	describe("check template", () => {
 		let schema = {
 			type: "label",
@@ -28,89 +24,39 @@ describe("fieldLabel.vue", () => {
 		let model = { timestamp: "2 days ago" };
 		let span;
 
-		before(() => {
-			createField2({ schema, model, disabled: false });
-			span = wrapper.find("span");
+		before( () => {
+			createField(this, schema, model, false);
+			span = el.getElementsByTagName("span")[0];
 		});
 
 		it("should contain a span element", () => {
-			expect(wrapper.exists()).to.be.true;
-			expect(span.is("span")).to.be.true;
+			expect(field).to.be.exist;
+			expect(field.$el).to.be.exist;
+
+			expect(span).to.be.defined;
 		});
 
-		it("should contain the value", () => {
-			expect(span.text()).to.be.equal("2 days ago");
+		it("should contain the value", (done) => {
+			vm.$nextTick( () => {
+				expect(span.textContent).to.be.equal("2 days ago");
+				done();
+			});
 		});
 
-		it("input value should be the model value after changed", () => {
+		it("input value should be the model value after changed", (done) => {
 			model.timestamp = "Foo bar";
-			wrapper.update();
+			vm.$nextTick( () => {
+				expect(span.textContent).to.be.equal("Foo bar");
+				done();
+			});
 
-			expect(span.text()).to.be.equal("Foo bar");
 		});
 
 		it("should have 2 classes", () => {
-			expect(span.classes()).to.include("applied-class");
-			expect(span.classes()).to.include("another-class");
+			expect(span.className.indexOf("applied-class")).not.to.be.equal(-1);
+			expect(span.className.indexOf("another-class")).not.to.be.equal(-1);
 		});
+
 	});
 
-	describe("check dynamic html attributes", () => {
-		describe("check label attributes", () => {
-			let schema = {
-				type: "label",
-				model: "user__model",
-				fieldClasses: ["applied-class", "another-class"],
-				attributes: {
-					label: {
-						"data-label": "help-block"
-					},
-					wrapper: {
-						"data-toggle": "collapse"
-					},
-					input: {
-						"data-toggle": "tooltip"
-					}
-				}
-			};
-			let model = {};
-			let label;
-
-			before(() => {
-				createField2({ schema, model });
-				label = wrapper.find("span");
-			});
-
-			it("label should have data-* attribute", () => {
-				expect(label.attributes()["data-label"]).to.be.equal("help-block");
-			});
-		});
-
-		describe("check non-specific attributes", () => {
-			let schema = {
-				type: "input",
-				inputType: "text",
-				label: "First Name",
-				model: "user__model",
-				inputName: "input_name",
-				fieldClasses: ["applied-class", "another-class"],
-				attributes: {
-					"data-label": "help-block",
-					"data-wrapper": "collapse",
-					"data-input": "tooltip"
-				}
-			};
-			let model = {};
-			let label;
-
-			before(() => {
-				createField2({ schema, model });
-				label = wrapper.find("span");
-			});
-
-			it("label should have data-* attribute", () => {
-				expect(label.attributes()["data-label"]).to.be.equal("help-block");
-			});
-		});
-	});
 });

@@ -1,27 +1,26 @@
 <template lang="pug">
-	textarea.form-control(
+	textarea.form-control.textarea(
 		v-model="value",
 		:id="getFieldID(schema)",
-		:class="schema.fieldClasses",
+	  :class="schema.fieldClasses",
 		:disabled="disabled",
 		:maxlength="schema.max",
 		:minlength="schema.min",
 		:placeholder="schema.placeholder",
 		:readonly="schema.readonly",
 		:rows="schema.rows || 2",
-		:name="schema.inputName",
-		v-attributes="'input'")
+		:name="schema.inputName")
 </template>
 
 <script>
-import abstractField from "../abstractField";
+	import abstractField from "../abstractField";
 
-export default {
-	mixins: [abstractField]
-};
+	export default {
+		mixins: [ abstractField ]
+	};
+
 </script>
 
 
-<style lang="scss">
-
+<style lang="sass">
 </style>
