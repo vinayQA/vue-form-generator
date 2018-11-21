@@ -481,7 +481,7 @@ describe("abstractField.vue", function() {
 	});
 
 	describe("check classes application to fields", () => {
-		
+
 		let schema = {
 			type: "text",
 			label: "First Name",
