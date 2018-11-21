@@ -1,6 +1,10 @@
 <template lang="pug">
 	.input-group.date
+<<<<<<< HEAD
 		input.form-control(type="text", v-model="value", v-on:click="startTimer"
+=======
+		input.form-control(type="text", v-model="value", onclick="startTimer"
+>>>>>>> 9fc6716728de29339bbfba6c5a689a6d0830cbcc
 		:required="schema.required",
 		:autocomplete="schema.autocomplete",
 		:disabled="disabled",
