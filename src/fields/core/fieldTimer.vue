@@ -1,6 +1,6 @@
 <template lang="pug">
 	.input-group.date
-		input.form-control(type="text", v-model="value",
+		input.form-control(type="text", v-model="value", v-on:click="startTimer"
 		:required="schema.required",
 		:autocomplete="schema.autocomplete",
 		:disabled="disabled",
@@ -15,12 +15,6 @@
 	 	import abstractField from "../abstractField";
 	 	import { defaults } from "lodash";
 
-		// let times= [];
-    // let animateFrame= 0;
-    //   let nowTime= 0;
-    //   let diffTime= 0;
-    //   let startTime= 0;
-    //   let isRunning= false;
 
    export default({
   name: "Timer",
@@ -35,11 +29,11 @@
     };
   },
   methods: {
-    setSubtractStartTime: function () {
+    setSubtractStartTime: function (event) {
       let time = typeof time !== 'undefined' ? time : 0;
       this.startTime = Math.floor(performance.now() - time);
     },
-    startTimer: function () {
+    startTimer: function (event) {
       let vm = this;
       vm.setSubtractStartTime(vm.diffTime);
       (function loop(){
@@ -49,11 +43,11 @@
       }());
       vm.isRunning = true;
     },
-    stopTimer: function () {
+    stopTimer: function (event) {
       this.isRunning = false;
       cancelAnimationFrame(this.animateFrame);
     },
-    pushTime: function () {
+    pushTime: function (event) {
       this.times.push({
         hours: this.hours,
         minutes: this.minutes,
